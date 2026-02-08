@@ -5,7 +5,7 @@ from pathlib import Path
 from motility_inference.pipeline import run_motility_inference
 from morphology_inference.pipeline import run_morphology_inference
 from tracking.pipeline import tracking_pipeline
-from draw_trajectory_video import draw_trajectory
+from draw_trajectory_video import draw_trajectory_video
 
 # -----------------------------
 # CONFIG
