@@ -1,0 +1,12 @@
+tensorflow==2.15.0
+keras==3.0.5
+numpy==1.26.4
+pandas==2.1.4
+opencv-python==4.9.0.80
+streamlit==1.32.0
+scikit-learn==1.4.0
+streamlit
+matplotlib
+trackpy
+tqdm
+ffmpeg-python
