@@ -3,10 +3,10 @@ import cv2
 import streamlit as st
 import pandas as pd
 
-from tracking.run_tracking import run_tracking_pipeline
+from tracking.pipeline import tracking_pipeline
 from motility_inference.pipeline import run_motility_inference
 from morphology_inference.pipeline import run_morphology_inference
-from utils.draw_trajectory_video import draw_trajectory_video
+from visualization.draw_trajectory_video import draw_trajectory_video
 
 # =====================
 # BASIC SETUP
