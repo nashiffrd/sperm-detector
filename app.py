@@ -5,168 +5,189 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 
+# Import modul internal
 from preparation.pipeline import prepare_video_pipeline
 from tracking.pipeline import tracking_pipeline
-from tracking.visualization import draw_locate_frame, draw_tracks
-# Import analyzer baru kita
 from models.motility_analyzer import run_motility_analysis
+from models.morphology_analyzer import run_morphology_analysis
 
 # =====================================================
 # PAGE CONFIG
 # =====================================================
 st.set_page_config(
-    page_title="Sperm Analysis App",
-    layout="wide"
+    page_title="Sperm Analysis AI",
+    layout="wide",
+    initial_sidebar_state="expanded"
 )
 
 # =====================================================
-# SESSION STATE
+# SESSION STATE INITIALIZATION
 # =====================================================
-if "page" not in st.session_state:
-    st.session_state.page = "Halaman Awal"
-if "video_path" not in st.session_state:
-    st.session_state.video_path = None
-if "prepared_video" not in st.session_state:
-    st.session_state.prepared_video = None
-if "tracks_df" not in st.session_state:
-    st.session_state.tracks_df = None
-if "analysis_results" not in st.session_state:
-    st.session_state.analysis_results = None
+states = {
+    "page": "Halaman Awal",
+    "video_path": None,
+    "prepared_video": None,
+    "tracks_df": None,
+    "motility_results": None,
+    "morphology_results": None
+}
+
+for key, value in states.items():
+    if key not in st.session_state:
+        st.session_state[key] = value
 
 # =====================================================
-# SIDEBAR NAVIGATION
+# SIDEBAR
 # =====================================================
-st.sidebar.title("Navigasi")
+st.sidebar.title("🧬 Sperm Analysis AI")
 st.session_state.page = st.sidebar.radio(
-    "Pilih Halaman",
-    ["Halaman Awal", "Data Loader", "Data Preprocessing", "Motility Analysis"],
-    index=["Halaman Awal", "Data Loader", "Data Preprocessing", "Motility Analysis"].index(st.session_state.page)
+    "Navigasi",
+    ["Halaman Awal", "Data Loader", "Analysis Dashboard"],
+    index=["Halaman Awal", "Data Loader", "Analysis Dashboard"].index(st.session_state.page)
 )
 
 # =====================================================
-# HALAMAN AWAL
+# PAGE: HALAMAN AWAL
 # =====================================================
 if st.session_state.page == "Halaman Awal":
-    st.title("Aplikasi Analisis Motilitas dan Morfologi Spermatozoa")
-    st.markdown("""
-    Aplikasi ini melakukan analisis sperma berbasis video melalui tahapan:
-    **preprocessing**, **tracking**, dan **klasifikasi otomatis**.
-    """)
+    st.title("Sistem Analisis Spermatozoa Terintegrasi")
+    st.info("Gunakan aplikasi ini untuk menganalisis Motilitas (3D-CNN) dan Morfologi (EfficientNetV2S) secara otomatis.")
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        st.subheader("Analisis Motilitas")
+        st.write("Mengklasifikasikan sperma menjadi PR, NP, dan IM berdasarkan pergerakan dalam 32 frame.")
+    with col2:
+        st.subheader("Analisis Morfologi")
+        st.write("Mengidentifikasi bentuk Normal vs Abnormal menggunakan teknik Binary Erosion pada frame terbaik.")
 
-    if st.button("▶ Start Analysis"):
+    if st.button("Mulai Analisis Sekarang", type="primary"):
         st.session_state.page = "Data Loader"
         st.rerun()
 
 # =====================================================
-# DATA LOADER
+# PAGE: DATA LOADER
 # =====================================================
 elif st.session_state.page == "Data Loader":
-    st.header("Data Loader")
-    uploaded_file = st.file_uploader("Upload Video Sperma", type=["mp4", "avi", "mov"])
+    st.header("1. Upload Video")
+    uploaded_file = st.file_uploader("Pilih video sperma (.mp4, .avi)", type=["mp4", "avi", "mov"])
 
-    if uploaded_file is not None:
+    if uploaded_file:
         temp_dir = tempfile.mkdtemp()
-        video_path = os.path.join(temp_dir, uploaded_file.name)
-        with open(video_path, "wb") as f:
+        v_path = os.path.join(temp_dir, uploaded_file.name)
+        with open(v_path, "wb") as f:
             f.write(uploaded_file.read())
-
-        st.session_state.video_path = video_path
-        st.session_state.prepared_video = None
-        st.session_state.tracks_df = None
-        st.session_state.analysis_results = None
-        st.success("Video berhasil diupload")
-
-        if st.button("➡ Lanjutkan Preprocessing"):
-            st.session_state.page = "Data Preprocessing"
+        
+        st.session_state.video_path = v_path
+        st.success("Video berhasil diunggah!")
+        
+        if st.button("Proses Preprocessing & Tracking ➡"):
+            with st.spinner("Membersihkan video & Tracking partikel..."):
+                # 1. Preprocessing
+                prep_video = prepare_video_pipeline(v_path, temp_dir)
+                st.session_state.prepared_video = prep_video
+                
+                # 2. Tracking
+                csv_out = os.path.join(temp_dir, "tracks.csv")
+                df_tracks = tracking_pipeline(prep_video, csv_out)
+                st.session_state.tracks_df = df_tracks.reset_index(drop=True)
+                
+            st.session_state.page = "Analysis Dashboard"
             st.rerun()
 
 # =====================================================
-# DATA PREPROCESSING & TRACKING
+# PAGE: ANALYSIS DASHBOARD (CORE)
 # =====================================================
-elif st.session_state.page == "Data Preprocessing":
-    st.header("Data Preprocessing & Tracking")
-
-    if st.session_state.video_path is None:
-        st.warning("Silakan upload video terlebih dahulu.")
+elif st.session_state.page == "Analysis Dashboard":
+    st.header("2. Dashboard Analisis")
+    
+    if st.session_state.tracks_df is None:
+        st.warning("Harap upload dan proses video terlebih dahulu di halaman Data Loader.")
         st.stop()
 
-    # Preprocessing
-    if st.session_state.prepared_video is None:
-        with st.spinner("Menjalankan preprocessing video..."):
-            work_dir = tempfile.mkdtemp()
-            st.session_state.prepared_video = prepare_video_pipeline(
-                input_video_path=st.session_state.video_path,
-                working_dir=work_dir
-            )
+    # Tampilkan Ringkasan Tracking
+    total_sperm = st.session_state.tracks_df['particle'].nunique()
+    st.metric("Total Sperma Terdeteksi", total_sperm)
 
-    # Tracking
-    if st.session_state.tracks_df is None:
-        with st.spinner("Menjalankan tracking sperma..."):
-            output_csv = os.path.join(os.path.dirname(st.session_state.prepared_video), "final_tracks.csv")
-            tracks = tracking_pipeline(
-                prepared_video_path=st.session_state.prepared_video,
-                output_csv_path=output_csv
-            )
-            st.session_state.tracks_df = tracks.reset_index(drop=True)
+    st.divider()
 
-    tracks_df = st.session_state.tracks_df
+    # --- ACTION BUTTONS ---
+    colA, colB = st.columns(2)
     
-    # Visualization UI (Sama seperti sebelumnya)
-    st.info(f"Ditemukan {tracks_df['particle'].nunique()} partikel untuk dianalisis.")
-    
-    if st.button("🚀 Jalankan Analisis Motilitas"):
-        st.session_state.page = "Motility Analysis"
-        st.rerun()
-
-# =====================================================
-# MOTILITY ANALYSIS (MODEL INFERENCE)
-# =====================================================
-elif st.session_state.page == "Motility Analysis":
-    st.header("Motility Classification (3D-CNN)")
-
-    if st.session_state.tracks_df is None:
-        st.error("Data tracking tidak ditemukan.")
-        st.stop()
-
-    model_path = "model_motility.h5" # Pastikan file h5 ada di folder ini
-    
-    if not os.path.exists(model_path):
-        st.error(f"Model file tidak ditemukan di {model_path}. Harap upload model h5 Anda.")
-    else:
-        if st.session_state.analysis_results is None:
-            with st.spinner("Mengekstrak clips dan melakukan klasifikasi (PR/NP/IM)..."):
-                try:
-                    results_df = run_motility_analysis(
-                        video_path=st.session_state.prepared_video,
-                        tracks_df=st.session_state.tracks_df,
-                        model_path=model_path
+    # 1. TOMBOL MOTILITY
+    with colA:
+        if st.button("🚀 Jalankan Analisis Motilitas", use_container_width=True):
+            model_path = "models/best_3dcnn.h5"
+            if os.path.exists(model_path):
+                with st.spinner("Menganalisis pergerakan (3D-CNN)..."):
+                    st.session_state.motility_results = run_motility_analysis(
+                        st.session_state.prepared_video, 
+                        st.session_state.tracks_df, 
+                        model_path
                     )
-                    st.session_state.analysis_results = results_df
-                except Exception as e:
-                    st.error(f"Terjadi kesalahan saat inferensi: {e}")
+                st.success("Motilitas Selesai!")
+            else:
+                st.error("File model motility tidak ditemukan di folder models/")
 
-        if st.session_state.analysis_results is not None:
-            res = st.session_state.analysis_results
-            
-            # --- TAMPILKAN SUMMARY ---
-            col1, col2, col3 = st.columns(3)
-            col1.metric("Progressive (PR)", len(res[res['motility_label'] == 'PR']))
-            col2.metric("Non-Progressive (NP)", len(res[res['motility_label'] == 'NP']))
-            col3.metric("Immotile (IM)", len(res[res['motility_label'] == 'IM']))
+    # 2. TOMBOL MORPHOLOGY
+    with colB:
+        if st.button("🔬 Jalankan Analisis Morfologi", use_container_width=True):
+            model_path = "models/morphology_model.h5"
+            if os.path.exists(model_path):
+                with st.spinner("Mengekstrak ROI & Analisis Bentuk..."):
+                    st.session_state.morphology_results = run_morphology_analysis(
+                        st.session_state.prepared_video, 
+                        st.session_state.tracks_df, 
+                        model_path
+                    )
+                st.success("Morfologi Selesai!")
+            else:
+                st.error("File model morphology tidak ditemukan di folder models/")
 
-            st.divider()
-            st.subheader("Detail Hasil per Partikel")
-            st.dataframe(res, use_container_width=True)
-            
-            # Gabungkan dengan data koordinat jika ingin download
-            full_report = st.session_state.tracks_df.merge(res, on='particle', how='left')
-            st.download_button(
-                "Download Full Report (CSV)",
-                full_report.to_csv(index=False),
-                "sperm_analysis_report.csv",
-                "text/csv"
+    st.divider()
+
+    # --- DISPLAY RESULTS ---
+    if st.session_state.motility_results is not None or st.session_state.morphology_results is not None:
+        res_col1, res_col2 = st.columns(2)
+        
+        # Tampilan Hasil Motilitas
+        with res_col1:
+            if st.session_state.motility_results is not None:
+                st.subheader("Hasil Motilitas")
+                df_mot = st.session_state.motility_results
+                counts = df_mot['motility_label'].value_counts()
+                st.bar_chart(counts)
+                st.dataframe(df_mot[['particle', 'motility_label', 'confidence']], use_container_width=True)
+
+        # Tampilan Hasil Morfologi
+        with res_col2:
+            if st.session_state.morphology_results is not None:
+                st.subheader("Hasil Morfologi")
+                df_morf = st.session_state.morphology_results
+                counts_m = df_morf['morphology_label'].value_counts()
+                st.pie_chart(counts_m) # Opsional jika ingin ganti pie
+                
+                # Tampilkan 5 contoh hasil binary erosion
+                st.write("Sampel Hasil Binary Erosion:")
+                img_cols = st.columns(3)
+                for i, row in df_morf.head(3).iterrows():
+                    img_cols[i].image(row['image_display'], caption=f"P-{row['particle']}: {row['morphology_label']}")
+
+    # --- DOWNLOAD SECTION ---
+    if st.session_state.motility_results is not None:
+        st.divider()
+        st.subheader("Export Data")
+        # Gabungkan semua hasil jika ada
+        final_report = st.session_state.motility_results.copy()
+        if st.session_state.morphology_results is not None:
+            final_report = final_report.merge(
+                st.session_state.morphology_results[['particle', 'morphology_label', 'morphology_prob']], 
+                on='particle', how='left'
             )
-
-    if st.button("⬅ Kembali ke Preprocessing"):
-        st.session_state.page = "Data Preprocessing"
-        st.rerun()
+        
+        st.download_button(
+            label="Download Laporan Analisis (.csv)",
+            data=final_report.to_csv(index=False),
+            file_name="sperm_analysis_report.csv",
+            mime="text/csv"
+        )
