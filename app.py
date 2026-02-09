@@ -9,7 +9,7 @@ from preparation.pipeline import prepare_video_pipeline
 from tracking.pipeline import tracking_pipeline
 from tracking.visualization import draw_locate_frame, draw_tracks
 # Import analyzer baru kita
-from analysis.motility_analyzer import run_motility_analysis
+from models.motility_analyzer import run_motility_analysis
 
 # =====================================================
 # PAGE CONFIG
@@ -128,7 +128,7 @@ elif st.session_state.page == "Motility Analysis":
         st.error("Data tracking tidak ditemukan.")
         st.stop()
 
-    model_path = "models/best_3dcnn.h5" # Pastikan file h5 ada di folder ini
+    model_path = "model_motility.h5" # Pastikan file h5 ada di folder ini
     
     if not os.path.exists(model_path):
         st.error(f"Model file tidak ditemukan di {model_path}. Harap upload model h5 Anda.")
