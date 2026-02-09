@@ -4,10 +4,10 @@ import cv2
 import tempfile
 import streamlit as st
 import pandas as pd
-import numpy as np
 
 from preparation.pipeline import prepare_video_pipeline
 from tracking.pipeline import tracking_pipeline
+from tracking.visualization import draw_locate_frame, draw_tracks
 
 # =====================================================
 # PAGE CONFIG
@@ -83,6 +83,7 @@ elif st.session_state.page == "Data Loader":
         with open(video_path, "wb") as f:
             f.write(uploaded_file.read())
 
+        # reset state
         st.session_state.video_path = video_path
         st.session_state.prepared_video = None
         st.session_state.tracks_df = None
@@ -108,8 +109,8 @@ elif st.session_state.page == "Data Preprocessing":
         with st.spinner("Menjalankan preprocessing video..."):
             work_dir = tempfile.mkdtemp()
             st.session_state.prepared_video = prepare_video_pipeline(
-                st.session_state.video_path,
-                work_dir
+                input_video_path=st.session_state.video_path,
+                working_dir=work_dir
             )
 
     # ================== AUTO TRACKING ==================
@@ -120,12 +121,13 @@ elif st.session_state.page == "Data Preprocessing":
                 "final_tracks.csv"
             )
             tracks = tracking_pipeline(
-                st.session_state.prepared_video,
-                output_csv
+                prepared_video_path=st.session_state.prepared_video,
+                output_csv_path=output_csv
             )
 
-            # 🔥 FIX AMBIGUITY DI SINI
-            st.session_state.tracks_df = tracks.reset_index()
+            # NORMALISASI DF (AMAN UNTUK VISUALISASI)
+            tracks = tracks.reset_index(drop=True)
+            st.session_state.tracks_df = tracks
 
     tracks_df = st.session_state.tracks_df
 
@@ -139,40 +141,30 @@ elif st.session_state.page == "Data Preprocessing":
     st.divider()
 
     # =====================================================
-    # VISUALISASI FRAME LOCATE & LINK-DRIFT
+    # VISUALISASI FRAME (DELEGATED KE MODULE)
     # =====================================================
     cap = cv2.VideoCapture(st.session_state.prepared_video)
     ret, frame = cap.read()
     cap.release()
 
+    if not ret:
+        st.error("Gagal membaca frame video hasil preprocessing.")
+        st.stop()
+
     frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-
     frame_idx = tracks_df["frame"].min()
-    frame_tracks = tracks_df[tracks_df["frame"] == frame_idx]
 
-    # ---------- LOCATE VIS ----------
-    locate_vis = cv2.cvtColor(frame_gray, cv2.COLOR_GRAY2BGR)
-    for _, r in frame_tracks.iterrows():
-        cv2.circle(
-            locate_vis,
-            (int(r["x"]), int(r["y"])),
-            8,
-            (0, 255, 0),
-            1
-        )
+    locate_vis = draw_locate_frame(
+        frame_gray=frame_gray,
+        detections_df=tracks_df,
+        frame_idx=frame_idx
+    )
 
-    # ---------- LINK & DRIFT VIS ----------
-    link_vis = cv2.cvtColor(frame_gray, cv2.COLOR_GRAY2BGR)
-    for pid, grp in tracks_df.groupby("particle"):
-        pts = grp.sort_values("frame")[["x", "y"]].values.astype(int)
-        for i in range(1, len(pts)):
-            cv2.line(
-                link_vis,
-                tuple(pts[i - 1]),
-                tuple(pts[i]),
-                (255, 0, 0),
-                1
-            )
+    link_vis = draw_tracks(
+        frame_gray=frame_gray,
+        tracks_df=tracks_df,
+        frame_idx=frame_idx
+    )
 
     colA, colB = st.columns(2)
     with colA:
