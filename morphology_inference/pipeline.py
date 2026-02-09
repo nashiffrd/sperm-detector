@@ -1,63 +1,74 @@
-from morphology_inference.roi_loader import load_roi_images
-from morphology_inference.morphology_ops import preprocess_binary, extract_target_sperm
-from morphology_inference.predictor import (
-    load_model,
-    predict_morphology_cnn
-)
+import os
+import cv2
+from morphology_inference.roi_extractor import extract_morphology_rois
+from morphology_inference.binary_preprocess import preprocess_morphology_binary
+from morphology_inference.predictor_cnn import load_model, predict_morphology
+
 
 def run_morphology_inference(
-    img_dir: str,
-    model_path: str,
-    threshold: float = 0.5
+    tracks_csv,
+    video_dir,
+    model_path,
+    work_dir
 ):
-    rois = load_roi_images(img_dir)
+    """
+    Full morphology inference pipeline:
+    tracking -> ROI -> binary -> CNN
+    """
+
+    roi_dir = os.path.join(work_dir, "roi_raw")
+    binary_dir = os.path.join(work_dir, "roi_binary")
+
+    # 1. ROI extraction
+    extract_morphology_rois(
+        tracks_csv=tracks_csv,
+        video_dir=video_dir,
+        output_dir=roi_dir
+    )
+
+    # 2. Binary preprocessing
+    preprocess_morphology_binary(
+        roi_dir=roi_dir,
+        output_dir=binary_dir
+    )
+
+    # 3. Load CNN model
     model = load_model(model_path)
 
-    total = 0
-    normal = 0
-    abnormal = 0
+    results = []
+    counts = {"normal": 0, "abnormal": 0}
 
-    details = []
-
-    for item in rois:
-        binary = preprocess_binary(item["image"])
-        target = extract_target_sperm(binary)
-
-        if target is None:
+    for fname in os.listdir(binary_dir):
+        if not fname.endswith(".png"):
             continue
 
-        label, prob = predict_morphology_cnn(
-            model,
-            target,
-            threshold=threshold
-        )
+        img_path = os.path.join(binary_dir, fname)
+        img = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
+        if img is None:
+            continue
 
-        total += 1
-        if label == "normal":
-            normal += 1
-        else:
-            abnormal += 1
+        label, prob = predict_morphology(model, img)
+        counts[label] += 1
 
-        details.append({
-            "filename": item["filename"],
+        results.append({
+            "filename": fname,
             "label": label,
-            "probability": float(prob)
+            "prob": prob
         })
 
-    if total == 0:
-        return None
+    total = counts["normal"] + counts["abnormal"]
+    normal_pct = (counts["normal"] / total * 100) if total > 0 else 0
+    abnormal_pct = 100 - normal_pct if total > 0 else 0
 
-    pct_normal = normal / total * 100
-    pct_abnormal = abnormal / total * 100
-
-    status = "NORMAL" if pct_normal > 4 else "ABNORMAL"
+    final_label = "normal" if normal_pct > 4 else "abnormal"
 
     return {
-        "status": status,
-        "total": total,
-        "normal": normal,
-        "abnormal": abnormal,
-        "pct_normal": pct_normal,
-        "pct_abnormal": pct_abnormal,
-        "details": details
+        "summary": {
+            "normal": counts["normal"],
+            "abnormal": counts["abnormal"],
+            "normal_pct": normal_pct,
+            "abnormal_pct": abnormal_pct,
+            "final_label": final_label
+        },
+        "details": results
     }
