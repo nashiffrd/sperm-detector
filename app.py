@@ -1,210 +1,191 @@
-import os
-import cv2
-import tempfile
 import streamlit as st
-import pandas as pd
+import os
+import tempfile
 
+# =============================
+# PIPELINES
+# =============================
 from preparation.pipeline import prepare_video_pipeline
 from tracking.pipeline import tracking_pipeline
-from visualization import draw_locate_frame, draw_tracks
+from tracking.visualization import draw_locate_frame, draw_tracks
 from motility_inference.pipeline import run_motility_inference
 from morphology_inference.pipeline import run_morphology_inference
 
+
 # =============================
-# STREAMLIT CONFIG
+# CONFIG
 # =============================
 st.set_page_config(
-    page_title="Sperm Analysis System",
+    page_title="Sperm Analysis Dashboard",
     layout="wide"
 )
 
-# =============================
-# SESSION STATE INIT
-# =============================
-for k in [
-    "uploaded_video",
-    "prepared_video",
-    "tracks_csv",
-    "tracks_df",
-    "analysis_done",
-    "motility_result",
-    "morphology_result",
-]:
-    if k not in st.session_state:
-        st.session_state[k] = None
+MODEL_MOTILITY_PATH = "model_motility.h5"
+MODEL_MORPHOLOGY_PATH = "model_morfologi.h5"
+
 
 # =============================
-# SIDEBAR NAVIGATION
+# SIDEBAR
 # =============================
+st.sidebar.title("Navigation")
 page = st.sidebar.radio(
-    "Navigation",
-    [
-        "Halaman Awal",
-        "Data Loader",
-        "Preprocessing & Tracking",
-        "Main Dashboard"
-    ]
+    "Go to",
+    ["Upload & Tracking", "Motility Analysis", "Morphology Analysis", "Main Dashboard"]
 )
 
-# =============================
-# HALAMAN AWAL
-# =============================
-if page == "Halaman Awal":
-    st.title("Sperm Motility & Morphology Analysis")
-    st.write(
-        """
-        Aplikasi ini melakukan analisis sperma berbasis video mikroskopis
-        menggunakan **TrackPy**, **3D-CNN (Motility)**, dan **CNN EfficientNetV2 (Morphology)**.
-        """
-    )
-
-    st.markdown("### Cara Penggunaan")
-    st.markdown("""
-    1. Upload video sperma  
-    2. Sistem melakukan preprocessing & tracking otomatis  
-    3. Model melakukan inferensi motility dan morfologi  
-    4. Hasil ditampilkan dalam dashboard klinis
-    """)
-
-    if st.button("🚀 Start Analysis"):
-        st.session_state["page_jump"] = "Data Loader"
-        st.experimental_rerun()
 
 # =============================
-# DATA LOADER
+# GLOBAL SESSION STATE
 # =============================
-elif page == "Data Loader":
-    st.header("Upload Video")
+if "video_path" not in st.session_state:
+    st.session_state.video_path = None
 
-    video_file = st.file_uploader(
-        "Upload video (.mp4 / .avi)",
-        type=["mp4", "avi"]
-    )
+if "tracks_csv" not in st.session_state:
+    st.session_state.tracks_csv = None
 
-    if video_file is not None:
-        tmp_dir = tempfile.mkdtemp()
-        video_path = os.path.join(tmp_dir, video_file.name)
+if "motility_result" not in st.session_state:
+    st.session_state.motility_result = None
 
-        with open(video_path, "wb") as f:
-            f.write(video_file.read())
+if "morphology_result" not in st.session_state:
+    st.session_state.morphology_result = None
 
-        st.session_state.uploaded_video = video_path
-        st.success("✅ Video berhasil diupload")
 
-        if st.button("➡️ Lanjutkan Preprocessing"):
-            st.session_state["page_jump"] = "Preprocessing & Tracking"
-            st.experimental_rerun()
+# =========================================================
+# PAGE 1 — UPLOAD & TRACKING
+# =========================================================
+if page == "Upload & Tracking":
+    st.title("Upload Video & Tracking")
 
-# =============================
-# PREPROCESSING & TRACKING
-# =============================
-elif page == "Preprocessing & Tracking":
-    st.header("Preprocessing & Tracking")
+    uploaded = st.file_uploader("Upload sperm video", type=["mp4", "avi"])
 
-    if st.session_state.uploaded_video is None:
-        st.warning("Silakan upload video terlebih dahulu")
-        st.stop()
+    if uploaded:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            raw_video = os.path.join(tmpdir, uploaded.name)
 
-    with st.spinner("Menjalankan preprocessing dan tracking..."):
-        workdir = tempfile.mkdtemp()
-        prepared_video = prepare_video_pipeline(
-            st.session_state.uploaded_video,
-            workdir
-        )
+            with open(raw_video, "wb") as f:
+                f.write(uploaded.read())
 
-        tracks_csv = os.path.join(workdir, "final_tracks.csv")
-        tracks_df = tracking_pipeline(prepared_video, tracks_csv)
+            st.info("Preprocessing video...")
+            processed_video = prepare_video_pipeline(raw_video)
 
-        st.session_state.prepared_video = prepared_video
-        st.session_state.tracks_csv = tracks_csv
-        st.session_state.tracks_df = tracks_df
-        st.session_state.analysis_done = True
+            st.info("Running tracking...")
+            tracks_csv = tracking_pipeline(processed_video)
 
-    st.success("✅ Tracking selesai")
+            st.session_state.video_path = processed_video
+            st.session_state.tracks_csv = tracks_csv
 
-    # === INFO BAR
-    col1, col2 = st.columns(2)
-    col1.metric("Total Partikel", tracks_df["particle"].nunique())
-    col2.metric("Total Tracking Points", len(tracks_df))
+            st.success("Tracking completed!")
 
-    # === VISUALIZATION
-    cap = cv2.VideoCapture(prepared_video)
-    ret, frame = cap.read()
-    cap.release()
+            st.subheader("Tracking Visualization")
+            frame_vis = draw_locate_frame(processed_video)
+            st.image(frame_vis, caption="Detection Result")
 
-    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            track_vis = draw_tracks(processed_video, tracks_csv)
+            st.image(track_vis, caption="Tracking Result")
 
-    colA, colB = st.columns(2)
 
-    with colA:
-        st.subheader("Hasil Locate")
-        locate_img = draw_locate_frame(gray, tracks_df, frame_idx=0)
-        st.image(locate_img, channels="BGR")
+# =========================================================
+# PAGE 2 — MOTILITY
+# =========================================================
+elif page == "Motility Analysis":
+    st.title("Motility Analysis")
 
-    with colB:
-        st.subheader("Hasil Link & Drift")
-        track_img = draw_tracks(gray, tracks_df, frame_idx=50)
-        st.image(track_img, channels="BGR")
+    if st.session_state.video_path is None:
+        st.warning("Please run tracking first.")
+    else:
+        if st.button("Run Motility Inference"):
+            st.info("Running motility model...")
 
-    st.divider()
-    st.dataframe(tracks_df.head(100))
+            result = run_motility_inference(
+                video_path=st.session_state.video_path,
+                tracks_csv=st.session_state.tracks_csv,
+                model_path=MODEL_MOTILITY_PATH
+            )
 
-# =============================
-# MAIN DASHBOARD
-# =============================
+            st.session_state.motility_result = result
+            st.success("Motility inference completed!")
+
+        if st.session_state.motility_result:
+            res = st.session_state.motility_result
+            st.metric("PR (%)", res["PR"])
+            st.metric("NP (%)", res["NP"])
+            st.metric("IM (%)", res["IM"])
+
+
+# =========================================================
+# PAGE 3 — MORPHOLOGY
+# =========================================================
+elif page == "Morphology Analysis":
+    st.title("Morphology Analysis")
+
+    roi_dir = st.text_input("ROI directory path")
+
+    if st.button("Run Morphology Inference"):
+        if not os.path.exists(roi_dir):
+            st.error("ROI directory not found.")
+        else:
+            st.info("Running morphology model...")
+
+            result = run_morphology_inference(
+                img_dir=roi_dir,
+                model_path=MODEL_MORPHOLOGY_PATH
+            )
+
+            st.session_state.morphology_result = result
+            st.success("Morphology inference completed!")
+
+    if st.session_state.morphology_result:
+        labels = [r["label"] for r in st.session_state.morphology_result]
+        normal_pct = labels.count("normal") / len(labels) * 100
+        abnormal_pct = 100 - normal_pct
+
+        st.metric("Normal (%)", f"{normal_pct:.2f}")
+        st.metric("Abnormal (%)", f"{abnormal_pct:.2f}")
+
+
+# =========================================================
+# PAGE 4 — MAIN DASHBOARD
+# =========================================================
 elif page == "Main Dashboard":
-    st.header("Main Dashboard")
-
-    if not st.session_state.analysis_done:
-        st.warning("Lakukan preprocessing & tracking terlebih dahulu")
-        st.stop()
-
-    # =============================
-    # MOTILITY INFERENCE
-    # =============================
-    with st.spinner("Menjalankan inferensi motility..."):
-        motility = run_motility_inference(
-            video_path=st.session_state.prepared_video,
-            tracks_csv=st.session_state.tracks_csv,
-            model_path="model_motility.h5"
-        )
-
-    pr = motility["detail"]["PR"]
-    np_ = motility["detail"]["NP"]
-    im = motility["detail"]["IM"]
-    total = pr + np_ + im
-
-    pct_pr = pr / total * 100 if total > 0 else 0
-    pct_np = np_ / total * 100 if total > 0 else 0
-    pct_im = im / total * 100 if total > 0 else 0
-
-    motility_status = "FERTIL" if (pct_pr + pct_np) > 40 else "INFERTIL"
-
-    # =============================
-    # MORPHOLOGY INFERENCE
-    # =============================
-    with st.spinner("Menjalankan inferensi morfologi..."):
-        morphology = run_morphology_inference(
-            img_dir="roi_images",
-            model_path="model_morfologi.h5"
-        )
-
-    # =============================
-    # DASHBOARD DISPLAY
-    # =============================
-    st.markdown("## 🧬 Hasil Analisis")
+    st.title("Main Fertility Dashboard")
 
     col1, col2 = st.columns(2)
 
+    # ---------- MOTILITY ----------
     with col1:
-        st.subheader("Motility")
-        st.markdown(f"### **{motility_status}**")
-        st.write(f"PR: {pct_pr:.2f}%")
-        st.write(f"NP: {pct_np:.2f}%")
-        st.write(f"IM: {pct_im:.2f}%")
+        st.subheader("Motility Classification")
 
+        if st.session_state.motility_result:
+            m = st.session_state.motility_result
+            fertile = (m["PR"] + m["NP"]) > 40
+
+            st.metric(
+                "Status",
+                "FERTILE ✅" if fertile else "INFERTILE ❌"
+            )
+
+            st.write(f"PR: {m['PR']:.2f}%")
+            st.write(f"NP: {m['NP']:.2f}%")
+            st.write(f"IM: {m['IM']:.2f}%")
+        else:
+            st.info("Motility result not available.")
+
+
+    # ---------- MORPHOLOGY ----------
     with col2:
-        st.subheader("Morphology")
-        st.markdown(f"### **{morphology['status']}**")
-        st.write(f"Normal: {morphology['pct_normal']:.2f}%")
-        st.write(f"Abnormal: {morphology['pct_abnormal']:.2f}%")
+        st.subheader("Morphology Classification")
+
+        if st.session_state.morphology_result:
+            labels = [r["label"] for r in st.session_state.morphology_result]
+            normal_pct = labels.count("normal") / len(labels) * 100
+            abnormal_pct = 100 - normal_pct
+
+            st.metric(
+                "Status",
+                "NORMAL ✅" if normal_pct > 4 else "ABNORMAL ❌"
+            )
+
+            st.write(f"Normal: {normal_pct:.2f}%")
+            st.write(f"Abnormal: {abnormal_pct:.2f}%")
+        else:
+            st.info("Morphology result not available.")
