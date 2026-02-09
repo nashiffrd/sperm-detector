@@ -26,7 +26,7 @@ page = st.sidebar.radio(
         "Data Preprocessing"
     ]
 
-if page == "Halaman Awal":
+if page == "Halaman Awal"
     st.title("Aplikasi Analisis Motilitas dan Morfologi Spermatozoa")
 
     st.markdown("""
