@@ -8,7 +8,6 @@ import numpy as np
 
 from preparation.pipeline import prepare_video_pipeline
 from tracking.pipeline import tracking_pipeline
-import trackpy as tp
 
 # =====================================================
 # PAGE CONFIG
@@ -64,7 +63,7 @@ if st.session_state.page == "Halaman Awal":
 
     if st.button("▶ Start Analysis"):
         st.session_state.page = "Data Loader"
-        st.rerun()
+        st.experimental_rerun()
 
 # =====================================================
 # DATA LOADER
@@ -92,7 +91,7 @@ elif st.session_state.page == "Data Loader":
 
         if st.button("➡ Lanjutkan Preprocessing"):
             st.session_state.page = "Data Preprocessing"
-            st.rerun()
+            st.experimental_rerun()
 
 # =====================================================
 # DATA PREPROCESSING (AUTO RUN)
@@ -120,10 +119,13 @@ elif st.session_state.page == "Data Preprocessing":
                 os.path.dirname(st.session_state.prepared_video),
                 "final_tracks.csv"
             )
-            st.session_state.tracks_df = tracking_pipeline(
+            tracks = tracking_pipeline(
                 st.session_state.prepared_video,
                 output_csv
             )
+
+            # 🔥 FIX AMBIGUITY DI SINI
+            st.session_state.tracks_df = tracks.reset_index()
 
     tracks_df = st.session_state.tracks_df
 
@@ -162,7 +164,7 @@ elif st.session_state.page == "Data Preprocessing":
     # ---------- LINK & DRIFT VIS ----------
     link_vis = cv2.cvtColor(frame_gray, cv2.COLOR_GRAY2BGR)
     for pid, grp in tracks_df.groupby("particle"):
-        pts = grp[grp["frame"] <= frame_idx][["x", "y"]].values.astype(int)
+        pts = grp.sort_values("frame")[["x", "y"]].values.astype(int)
         for i in range(1, len(pts)):
             cv2.line(
                 link_vis,
