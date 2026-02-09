@@ -12,7 +12,7 @@ def draw_locate_frame(frame_gray, detections_df, frame_idx):
             (int(r["x"]), int(r["y"])),
             8,
             (0, 255, 0),
-            3
+            2
         )
     return vis
 
