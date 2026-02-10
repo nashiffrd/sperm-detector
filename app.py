@@ -32,7 +32,14 @@ st.markdown("""
     }
     </style>
     """, unsafe_allow_html=True)
-
+# JUDUL GLOBAL (DI ATAS TABS)
+# Bagian ini akan muncul di semua Tab agar page tidak terlihat kosong
+st.markdown("""
+    <div style="text-align: center; padding: 20px; background-color: #ffffff; border-radius: 10px; margin-bottom: 20px; border-bottom: 4px solid #007bff;">
+        <h1 style='margin: 0; color: #007bff;'>SPERM ANALYSIS AI SYSTEM</h1>
+        <p style='margin: 5px; color: #666; font-size: 1.2rem;'>Laboratorium Digital: Deteksi Otomatis Motilitas & Morfologi</p>
+    </div>
+    """, unsafe_allow_html=True)
 # ==========================================
 # 2. SESSION STATE
 # ==========================================
