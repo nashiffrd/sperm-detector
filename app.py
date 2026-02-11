@@ -93,6 +93,17 @@ with tab2:
     video_file = st.file_uploader("Pilih Video Sperma", type=['mp4', 'avi'])
 
     if video_file:
+        # --- LOGIKA RESET (Tambahkan ini) ---
+        # Membuat ID unik untuk video (nama + ukuran file)
+        current_video_id = f"{video_file.name}_{video_file.size}"
+        
+        # Jika video yang diupload berbeda dengan yang terakhir diproses, reset session state
+        if st.session_state.get('last_video_id') != current_video_id:
+            st.session_state.tracks_df = None
+            st.session_state.sample_frame = None
+            st.session_state.last_video_id = current_video_id
+        # ------------------------------------
+
         if st.session_state.tracks_df is None:
             # 1. Simpan video upload ke file temporary
             tfile = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4')
@@ -105,14 +116,12 @@ with tab2:
                 cap = cv2.VideoCapture(tfile.name)
                 ret, frame = cap.read()
                 if ret:
-                    # Simpan frame ke session_state agar tidak hilang setelah rerun
                     st.session_state.sample_frame = frame
-                    
+                    # Tampilkan saat proses berjalan
                     c1, c2, c3 = st.columns(3)
                     c1.image(frame, caption="Frame Asli (tfile)", use_container_width=True)
                     c2.image(cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY), caption="Grayscale", use_container_width=True)
                     c3.image(cv2.convertScaleAbs(frame, alpha=1.5, beta=10), caption="Contrast", use_container_width=True)
-                cap.release()
                 
                 # 2. Jalankan Proses Pipeline
                 prep_path = prepare_video_pipeline(tfile.name, temp_dir)
@@ -121,7 +130,6 @@ with tab2:
                 # 3. Jalankan Tracking
                 df = tracking_pipeline(prep_path, os.path.join(temp_dir, "tracks.csv"))
                 
-                # Fix Value Error (Duplikasi Kolom)
                 if 'frame' not in df.columns:
                     df = df.reset_index()
                 else:
@@ -129,6 +137,18 @@ with tab2:
                 
                 st.session_state.tracks_df = df
                 status.update(label="Preprocessing & Tracking Selesai!", state="complete")
+
+        # --- TAMPILAN SETELAH SELESAI (Agar tetap muncul saat upload ulang atau pindah tab) ---
+        if st.session_state.tracks_df is not None:
+            # Munculkan kembali visualisasi Tahap A dari session state
+            if st.session_state.sample_frame is not None:
+                st.divider()
+                st.write("### Visualisasi Tahap A (Preprocessing)")
+                f1, f2, f3 = st.columns(3)
+                img = st.session_state.sample_frame
+                f1.image(img, caption="Frame Asli", use_container_width=True)
+                f2.image(cv2.cvtColor(img, cv2.COLOR_BGR2GRAY), caption="Grayscale", use_container_width=True)
+                f3.image(cv2.convertScaleAbs(img, alpha=1.5, beta=10), caption="Contrast", use_container_width=True)
 
             st.divider()
             st.write("### Visualisasi Tahap B (Tracking Data)")
