@@ -256,51 +256,49 @@ with tab4:
     
         r2c1, r2c2 = st.columns([2, 1])
         with r2c1:
-    with st.container(border=True):
-        st.write("**Visualisasi Lintasan Pelacakan (Tracking Tracks)**")
+        with st.container(border=True):
+            st.write("**Visualisasi Lintasan Pelacakan (Tracking Tracks)**")
         
-        # Logika untuk menampilkan frame dengan lintasan (Trajectory)
-        if st.session_state.prepared_video and st.session_state.tracks_df is not None:
-            cap = cv2.VideoCapture(st.session_state.prepared_video)
-            # Mengambil frame terakhir untuk melihat seluruh lintasan yang sudah terbentuk
-            total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-            cap.set(cv2.CAP_PROP_POS_FRAMES, total_frames - 1) 
+            # Logika untuk menampilkan frame dengan lintasan (Trajectory)
+            if st.session_state.prepared_video and st.session_state.tracks_df is not None:
+                cap = cv2.VideoCapture(st.session_state.prepared_video)
+                # Mengambil frame terakhir untuk melihat seluruh lintasan yang sudah terbentuk
+                total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+                cap.set(cv2.CAP_PROP_POS_FRAMES, total_frames - 1) 
             
-            ret, frame = cap.read()
-            if ret:
-                frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-                # Memanggil fungsi draw_tracks dari visualization.py milikmu
-                vis_tracks = draw_tracks(frame_gray, st.session_state.tracks_df, frame_idx=total_frames-1)
-                st.image(vis_tracks, caption="Hasil Akhir Pelacakan Lintasan", use_container_width=True)
-            cap.release()
-        else:
-            st.info("Video hasil tracking tidak tersedia.")
+                ret, frame = cap.read()
+                if ret:
+                    frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+                    # Memanggil fungsi draw_tracks dari visualization.py milikmu
+                    vis_tracks = draw_tracks(frame_gray, st.session_state.tracks_df, frame_idx=total_frames-1)
+                    st.image(vis_tracks, caption="Hasil Akhir Pelacakan Lintasan", use_container_width=True)
+                cap.release()
+            else:
+                st.info("Video hasil tracking tidak tersedia.")
 
-with r2c2:
-    with st.container(border=True):
-        st.write("**Sampel Morfologi Terdeteksi**")
+            with r2c2:
+            with st.container(border=True):
+                st.write("**Sampel Morfologi Terdeteksi**")
+                # Mengambil hasil morfologi
+                mo_res = st.session_state.morphology_results
         
-        # Mengambil hasil morfologi
-        mo_res = st.session_state.morphology_results
-        
-        if mo_res is not None and not mo_res.empty:
-            # Menampilkan dua sampel: Satu Normal dan Satu Abnormal untuk perbandingan
-            tabs_morf = st.tabs(["Abnormal", "Normal"])
+                if mo_res is not None and not mo_res.empty:
+                    # Menampilkan dua sampel: Satu Normal dan Satu Abnormal untuk perbandingan
+                    tabs_morf = st.tabs(["Abnormal", "Normal"])
             
-            with tabs_morf[0]:
-                abnorm_sample = mo_res[mo_res['morphology_label'] == 'Abnormal']
-                if not norm_sample.empty:
-                    # Jika fungsi morfologi menyimpan image_display (crop sperma)
-                    st.image(norm_sample.iloc[0]['image_display'], caption="Contoh Abnormal", use_container_width=True)
+                with tabs_morf[0]:
+                    abnorm_sample = mo_res[mo_res['morphology_label'] == 'Abnormal']
+                    if not norm_sample.empty:
+                        # Jika fungsi morfologi menyimpan image_display (crop sperma)
+                        st.image(norm_sample.iloc[0]['image_display'], caption="Contoh Abnormal", use_container_width=True)
                 else:
                     st.write("Sampel Abnormal tidak ditemukan.")
             
-            with tabs_morf[1]:
-                norm_sample = mo_res[mo_res['morphology_label'] == 'Normal']
-                if not abnorm_sample.empty:
-                    st.image(abnorm_sample.iloc[0]['image_display'], caption="Contoh Normal", use_container_width=True)
-                else:
-                    st.write("Sampel Normal tidak ditemukan.")
-        else:
-            st.write("Data morfologi belum diproses.")
-
+                with tabs_morf[1]:
+                    norm_sample = mo_res[mo_res['morphology_label'] == 'Normal']
+                    if not abnorm_sample.empty:
+                        st.image(abnorm_sample.iloc[0]['image_display'], caption="Contoh Normal", use_container_width=True)
+                    else:
+                        st.write("Sampel Normal tidak ditemukan.")
+                    else:
+                        st.write("Data morfologi belum diproses.")
