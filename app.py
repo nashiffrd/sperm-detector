@@ -73,6 +73,7 @@ with tab1:
     st.info("Gunakan navigasi tab di atas untuk memulai proses analisis.")
     if st.button("Lakukan Analisis Sekarang 🚀", use_container_width=True):
         st.session_state.current_step = "⚙️ Data Loader & Processing"
+        st.rerun()
 
 # ------------------------------------------
 # TAB 2: DATA LOADER & PROCESSING
