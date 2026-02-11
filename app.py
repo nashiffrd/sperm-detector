@@ -118,22 +118,22 @@ with tab2:
                 # B. Tracking
                 df = tracking_pipeline(prep_path, os.path.join(temp_dir, "tracks.csv"))
                 
-                # --- FIX VALUE ERROR: CEK DUPLIKASI KOLOM SEBELUM RESET INDEX ---
+                # Fix Value Error (Duplikasi Kolom)
                 if 'frame' not in df.columns:
                     df = df.reset_index()
                 else:
                     df = df.reset_index(drop=True)
                 
                 st.session_state.tracks_df = df
-                status.update(label="Tracking Selesai!", state="complete")
+                status.update(label="Preprocessing & Tracking Selesai!", state="complete")
 
+        # Tampilkan hasil setelah proses otomatis selesai
         if st.session_state.tracks_df is not None:
             st.divider()
             m1, m2 = st.columns(2)
             m1.markdown(f"<div class='metric-container'><h4>Total Partikel</h4><h2>{st.session_state.tracks_df['particle'].nunique()}</h2></div>", unsafe_allow_html=True)
             m2.markdown(f"<div class='metric-container'><h4>Total Lintasan</h4><h2>{len(st.session_state.tracks_df)}</h2></div>", unsafe_allow_html=True)
             st.dataframe(st.session_state.tracks_df.head(50), use_container_width=True)
-
 # ------------------------------------------
 # TAB 3: ANALYSIS PROCESS
 # ------------------------------------------
