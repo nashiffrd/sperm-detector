@@ -9,7 +9,7 @@ from tracking.pipeline import tracking_pipeline
 from tracking.visualization import draw_tracks
 from models.motility_analyzer import run_motility_analysis
 from models.morphology_analyzer import run_morphology_analysis
-
+from upload.video_renderer import create_motility_video
 # ==========================================
 # 1. CONFIG & STYLE
 # ==========================================
@@ -271,24 +271,23 @@ with tab4:
 
 with r2c1:
     with st.container(border=True):
-        st.write("**Visualisasi Lintasan Pelacakan (Tracking Tracks)**")
+        st.write("**Visualisasi Motilitas Sperma (PR: Hijau, NP: Kuning, IM: Merah)**")
         
-        # Logika untuk menampilkan frame dengan lintasan (Trajectory)
-        if st.session_state.prepared_video and st.session_state.tracks_df is not None:
-            cap = cv2.VideoCapture(st.session_state.prepared_video)
-            # Mengambil frame terakhir untuk melihat seluruh lintasan yang sudah terbentuk
-            total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-            cap.set(cv2.CAP_PROP_POS_FRAMES, total_frames - 1) 
-            
-            ret, frame = cap.read()
-            if ret:
-                frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-                # Memanggil fungsi draw_tracks dari visualization.py milikmu
-                vis_tracks = draw_tracks(frame_gray, st.session_state.tracks_df, frame_idx=total_frames-1)
-                st.image(vis_tracks, caption="Hasil Akhir Pelacakan Lintasan", use_container_width=True)
-            cap.release()
+        if st.session_state.motility_results is not None:
+            # Tampilkan spinner karena proses render video butuh waktu
+            with st.spinner("Menghasilkan video visualisasi..."):
+                # Kita gunakan session_state untuk menyimpan path video visualisasi agar tidak render ulang
+                if 'vis_video_path' not in st.session_state:
+                    st.session_state.vis_video_path = create_motility_video(
+                        st.session_state.prepared_video, 
+                        st.session_state.tracks_df, 
+                        st.session_state.motility_results
+                    )
+                
+                # Tampilkan video
+                st.video(st.session_state.vis_video_path)
         else:
-            st.info("Video hasil tracking tidak tersedia.")
+            st.info("Selesaikan Analisis Motilitas di Tab 3 terlebih dahulu.")
 
 with r2c2:
     with st.container(border=True):
