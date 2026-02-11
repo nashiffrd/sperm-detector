@@ -130,17 +130,6 @@ with tab2:
                 st.session_state.tracks_df = df
                 status.update(label="Preprocessing & Tracking Selesai!", state="complete")
 
-        # --- TAMPILAN SETELAH PROSES SELESAI ---
-        if st.session_state.tracks_df is not None:
-            # Tampilkan kembali visualisasi Tahap A yang tadi disimpan
-            if 'sample_frame' in st.session_state:
-                st.write("### Visualisasi Tahap A (Frame Asli)")
-                sc1, sc2, sc3 = st.columns(3)
-                img = st.session_state.sample_frame
-                sc1.image(img, caption="Frame Asli", use_container_width=True)
-                sc2.image(cv2.cvtColor(img, cv2.COLOR_BGR2GRAY), caption="Grayscale", use_container_width=True)
-                sc3.image(cv2.convertScaleAbs(img, alpha=1.5, beta=10), caption="Contrast", use_container_width=True)
-
             st.divider()
             st.write("### Visualisasi Tahap B (Tracking Data)")
             m1, m2 = st.columns(2)
