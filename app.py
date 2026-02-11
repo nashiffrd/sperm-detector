@@ -234,10 +234,28 @@ with tab4:
         
         st.markdown(f"<div class='main-result-card'><h1>Main Result : {status_f}</h1></div>", unsafe_allow_html=True)
         st.write("")
+        
+         # Motility & Morphology (%)
+        r1c1, r1c2 = st.columns([2, 1])
+        with r1c1:
+            with st.container(border=True):
+                st.write("**Motility (%)**")
+                counts = m_res['motility_label'].value_counts()
+                c1, c2, c3 = st.columns(3)
+                c1.metric("Progressive", counts.get('PR', 0))
+                c2.metric("Non-Progressive", counts.get('NP', 0))
+                c3.metric("Immotile", counts.get('IM', 0))
 
-    r2c1, r2c2 = st.columns([2, 1])
-
-with r2c1:
+        with r1c2:
+            with st.container(border=True):
+                st.write("**Morfologi (%)**")
+                mo_res = st.session_state.morphology_results
+                mo_counts = mo_res['morphology_label'].value_counts()
+                st.write(f"Normal: {mo_counts.get('Normal', 0)}")
+                st.write(f"Abnormal: {mo_counts.get('Abnormal', 0)}")
+    
+        r2c1, r2c2 = st.columns([2, 1])
+        with r2c1:
     with st.container(border=True):
         st.write("**Visualisasi Lintasan Pelacakan (Tracking Tracks)**")
         
@@ -267,22 +285,22 @@ with r2c2:
         
         if mo_res is not None and not mo_res.empty:
             # Menampilkan dua sampel: Satu Normal dan Satu Abnormal untuk perbandingan
-            tabs_morf = st.tabs(["Normal", "Abnormal"])
+            tabs_morf = st.tabs(["Abnormal", "Normal"])
             
             with tabs_morf[0]:
-                norm_sample = mo_res[mo_res['morphology_label'] == 'Normal']
+                abnorm_sample = mo_res[mo_res['morphology_label'] == 'Abnormal']
                 if not norm_sample.empty:
                     # Jika fungsi morfologi menyimpan image_display (crop sperma)
-                    st.image(norm_sample.iloc[0]['image_display'], caption="Contoh Normal", use_container_width=True)
+                    st.image(norm_sample.iloc[0]['image_display'], caption="Contoh Abnormal", use_container_width=True)
                 else:
-                    st.write("Sampel normal tidak ditemukan.")
+                    st.write("Sampel Abnormal tidak ditemukan.")
             
             with tabs_morf[1]:
-                abnorm_sample = mo_res[mo_res['morphology_label'] == 'Abnormal']
+                norm_sample = mo_res[mo_res['morphology_label'] == 'Normal']
                 if not abnorm_sample.empty:
-                    st.image(abnorm_sample.iloc[0]['image_display'], caption="Contoh Abnormal", use_container_width=True)
+                    st.image(abnorm_sample.iloc[0]['image_display'], caption="Contoh Normal", use_container_width=True)
                 else:
-                    st.write("Sampel abnormal tidak ditemukan.")
+                    st.write("Sampel Normal tidak ditemukan.")
         else:
             st.write("Data morfologi belum diproses.")
 
