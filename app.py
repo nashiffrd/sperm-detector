@@ -48,8 +48,7 @@ tab1, tab2, tab3, tab4 = st.tabs([
     "🏠 Halaman Awal", 
     "⚙️ Data Loader & Processing", 
     "🔬 Analysis Process", 
-    "📊 Summary Dashboard"
-])
+    "📊 Summary Dashboard"])
 
 # ------------------------------------------
 # TAB 1: HALAMAN AWAL
@@ -190,3 +189,5 @@ with tab4:
                     st.image(norm_img.iloc[0]['image_display'], use_container_width=True)
                 else:
                     st.write("Tidak ada sampel normal.")
+
+ini kode terakhir kita , ingat2 dan aku mau revisi
