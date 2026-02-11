@@ -136,7 +136,6 @@ with tab2:
         if st.session_state.tracks_df is not None:
             # Munculkan kembali visualisasi Tahap A dari session state
             if st.session_state.sample_frame is not None:
-                st.divider()
                 st.write("### Visualisasi Tahap A (Preprocessing)")
                 f1, f2, f3 = st.columns(3)
                 img = st.session_state.sample_frame
