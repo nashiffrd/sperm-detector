@@ -108,11 +108,6 @@ with tab2:
             # 1. Simpan video upload ke file temporary
             tfile = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4')
             tfile.write(video_file.read())
-            
-            # Tampilan saat sedang berjalan
-            with progress_container.container():
-                st.info("⏳ Menjalankan Preprocessing & Tracking...")
-                temp_dir = tempfile.mkdtemp()
                 
                 # 2. Jalankan Proses Pipeline
                 prep_path = prepare_video_pipeline(tfile.name, temp_dir)
