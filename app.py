@@ -6,6 +6,7 @@ import tempfile
 import numpy as np
 from preparation.pipeline import prepare_video_pipeline
 from tracking.pipeline import tracking_pipeline
+from tracking.visualization import draw_locate_frame
 from models.motility_analyzer import run_motility_analysis
 from models.morphology_analyzer import run_morphology_analysis
 
@@ -108,7 +109,7 @@ with tab2:
             tfile = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4')
             tfile.write(video_file.read())
             
-            with st.status("Preprocessing and Tracking are Running") as status:
+            with st.status("⏳ Preprocessing and Tracking are Running") as status:
                 temp_dir = tempfile.mkdtemp()
                 
                 # --- VISUALISASI TAHAP A (MENGGUNAKAN TFILE) ---
@@ -135,12 +136,34 @@ with tab2:
             # Munculkan kembali visualisasi Tahap A dari session state
             if st.session_state.sample_frame is not None:
                 st.write("### Visualisasi Tahap A (Preprocessing)")
-                f1, f2, f3 = st.columns(3)
-                img = st.session_state.sample_frame
-                f1.image(img, caption="Frame Asli", use_container_width=True)
-                f2.image(cv2.cvtColor(img, cv2.COLOR_BGR2GRAY), caption="Grayscale", use_container_width=True)
-                f3.image(cv2.convertScaleAbs(img, alpha=1.5, beta=10), caption="Contrast", use_container_width=True)
-
+                # Ambil frame untuk visualisasi
+            cap_raw = cv2.VideoCapture(tfile.name if 'tfile' in locals() else video_file) # Frame Asli
+            cap_prep = cv2.VideoCapture(st.session_state.prepared_video) # Frame untuk Locate
+            
+            ret1, frame_raw = cap_raw.read()
+            ret2, frame_prep = cap_prep.read()
+            
+            if ret1 and ret2:
+                # Proses Frame untuk Locate (Tahap A)
+                # Gunakan frame_prep (grayscale) dan kirim ke fungsi visualization kamu
+                frame_gray = cv2.cvtColor(frame_prep, cv2.COLOR_BGR2GRAY)
+                frame_locate = draw_locate_frame(frame_gray, st.session_state.tracks_df, frame_idx=0)
+                
+                c1, c2, c3 = st.columns(3)
+                # 1. Frame Asli
+                c1.image(frame_raw, caption="1. Frame Asli", use_container_width=True)
+                
+                # 2. Frame Contrast (Hasil Preprocessing)
+                # Kita simulasi tampilan contrast dari frame_prep
+                frame_contrast = cv2.convertScaleAbs(frame_prep, alpha=1.5, beta=10)
+                c2.image(frame_contrast, caption="2. Hasil Contrast", use_container_width=True)
+                
+                # 3. Frame Locate (Hasil Deteksi Lingkaran Hijau)
+                c3.image(frame_locate, caption="3. Hasil Locate (Detected)", use_container_width=True)
+                
+            cap_raw.release()
+            cap_prep.release()
+            
             st.write("### Visualisasi Tahap B (Tracking Data)")
             m1, m2 = st.columns(2)
             m1.markdown(f"<div class='metric-container'><h4>Total Partikel</h4><h2>{st.session_state.tracks_df['particle'].nunique()}</h2></div>", unsafe_allow_html=True)
