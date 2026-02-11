@@ -268,26 +268,19 @@ with tab4:
 
         # --- 3. VISUALIZATION & SAMPLES ---
         r2c1, r2c2 = st.columns([2, 1])
-
 with r2c1:
     with st.container(border=True):
         st.write("**Visualisasi Motilitas Sperma (PR: Hijau, NP: Kuning, IM: Merah)**")
         
-        if st.session_state.motility_results is not None:
-            # Tampilkan spinner karena proses render video butuh waktu
-            with st.spinner("Menghasilkan video visualisasi..."):
-                # Kita gunakan session_state untuk menyimpan path video visualisasi agar tidak render ulang
-                if 'vis_video_path' not in st.session_state:
-                    st.session_state.vis_video_path = create_motility_video(
-                        st.session_state.prepared_video, 
-                        st.session_state.tracks_df, 
-                        st.session_state.motility_results
-                    )
-                
-                # Tampilkan video
-                st.video(st.session_state.vis_video_path)
+        if 'vis_video_path' in st.session_state and st.session_state.vis_video_path:
+            # Buka file secara manual dan baca isinya sebagai bytes
+            with open(st.session_state.vis_video_path, 'rb') as video_file:
+                video_bytes = video_file.read()
+            
+            # Masukkan objek bytes ke dalam st.video
+            st.video(video_bytes)
         else:
-            st.info("Selesaikan Analisis Motilitas di Tab 3 terlebih dahulu.")
+            st.info("Video sedang diproses atau belum tersedia.")
 
 with r2c2:
     with st.container(border=True):
