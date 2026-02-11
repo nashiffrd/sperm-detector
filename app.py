@@ -117,11 +117,6 @@ with tab2:
                 ret, frame = cap.read()
                 if ret:
                     st.session_state.sample_frame = frame
-                    # Tampilkan saat proses berjalan
-                    c1, c2, c3 = st.columns(3)
-                    c1.image(frame, caption="Frame Asli (tfile)", use_container_width=True)
-                    c2.image(cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY), caption="Grayscale", use_container_width=True)
-                    c3.image(cv2.convertScaleAbs(frame, alpha=1.5, beta=10), caption="Contrast", use_container_width=True)
                 
                 # 2. Jalankan Proses Pipeline
                 prep_path = prepare_video_pipeline(tfile.name, temp_dir)
@@ -129,12 +124,11 @@ with tab2:
                 
                 # 3. Jalankan Tracking
                 df = tracking_pipeline(prep_path, os.path.join(temp_dir, "tracks.csv"))
-                
                 if 'frame' not in df.columns:
                     df = df.reset_index()
                 else:
                     df = df.reset_index(drop=True)
-                
+            
                 st.session_state.tracks_df = df
                 status.update(label="Preprocessing & Tracking Selesai!", state="complete")
 
