@@ -116,13 +116,6 @@ with tab2:
                 ret, frame = cap.read()
                 if ret:
                     st.session_state.sample_frame = frame
-                    # Tampilkan saat proses berjalan
-                    st.write("### Visualisasi Tahap A (Preprocessing)")
-                    c1, c2, c3 = st.columns(3)
-                    c1.image(frame, caption="Frame Asli (tfile)", use_container_width=True)
-                    c2.image(cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY), caption="Grayscale", use_container_width=True)
-                    c3.image(cv2.convertScaleAbs(frame, alpha=1.5, beta=10), caption="Contrast", use_container_width=True)
-                cap.release()
                 
                 # 2. Jalankan Proses Pipeline
                 prep_path = prepare_video_pipeline(tfile.name, temp_dir)
@@ -130,12 +123,10 @@ with tab2:
                 
                 # 3. Jalankan Tracking
                 df = tracking_pipeline(prep_path, os.path.join(temp_dir, "tracks.csv"))
-                
                 if 'frame' not in df.columns:
                     df = df.reset_index()
                 else:
                     df = df.reset_index(drop=True)
-                
                 st.session_state.tracks_df = df
                 status.update(label="Preprocessing & Tracking Selesai!", state="complete")
 
@@ -143,7 +134,6 @@ with tab2:
         if st.session_state.tracks_df is not None:
             # Munculkan kembali visualisasi Tahap A dari session state
             if st.session_state.sample_frame is not None:
-                st.divider()
                 st.write("### Visualisasi Tahap A (Preprocessing)")
                 f1, f2, f3 = st.columns(3)
                 img = st.session_state.sample_frame
@@ -151,7 +141,6 @@ with tab2:
                 f2.image(cv2.cvtColor(img, cv2.COLOR_BGR2GRAY), caption="Grayscale", use_container_width=True)
                 f3.image(cv2.convertScaleAbs(img, alpha=1.5, beta=10), caption="Contrast", use_container_width=True)
 
-            st.divider()
             st.write("### Visualisasi Tahap B (Tracking Data)")
             m1, m2 = st.columns(2)
             m1.markdown(f"<div class='metric-container'><h4>Total Partikel</h4><h2>{st.session_state.tracks_df['particle'].nunique()}</h2></div>", unsafe_allow_html=True)
