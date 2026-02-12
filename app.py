@@ -231,13 +231,13 @@ with tab4:
         m_res = st.session_state.motility_results
         total_sperma = len(m_res)
         pr_val = len(m_res[m_res['motility_label'] == 'PR'])
-        
+
         # Logika WHO: Fertil jika PR > 32%
         status_f = "FERTIL" if pr_val > (0.32 * total_sperma) else "INFERTIL"
-        
+
         # Warna dinamis: Hijau untuk Fertil, Merah untuk Infertil
         bg_color = "#28a745" if status_f == "FERTIL" else "#dc3545"
-        
+
         st.markdown(f"""
             <div style='background-color: {bg_color}; padding: 20px; border-radius: 10px; text-align: center; color: white;'>
                 <h1 style='margin:0;'>Main Result : {status_f}</h1>
@@ -248,7 +248,7 @@ with tab4:
 
         # --- 2. MOTILITY & MORPHOLOGY METRICS ---
         r1c1, r1c2 = st.columns([2, 1])
-        
+
         with r1c1:
             with st.container(border=True):
                 st.write("**Motility Counts**")
@@ -267,45 +267,54 @@ with tab4:
                 st.write(f"**Abnormal:** {mo_counts.get('Abnormal', 0)}")
 
         # --- 3. VISUALIZATION & SAMPLES ---
-r2c1, r2c2 = st.columns([2, 1])
-with r2c1:
-    with st.container(border=True):
-        st.write("**Visualisasi Motilitas Sperma (PR: Hijau, NP: Kuning, IM: Merah)**")
-        
-        if 'vis_video_path' in st.session_state and st.session_state.vis_video_path:
-            # Buka file secara manual dan baca isinya sebagai bytes
-            with open(st.session_state.vis_video_path, 'rb') as video_file:
-                video_bytes = video_file.read()
-            
-            # Masukkan objek bytes ke dalam st.video
-            st.video(video_bytes)
-        else:
-            st.info("Video sedang diproses atau belum tersedia.")
+        r2c1, r2c2 = st.columns([2, 1])
 
-with r2c2:
-    with st.container(border=True):
-        st.write("**Sampel Morfologi Terdeteksi**")
-        
-        # Mengambil hasil morfologi
-        mo_res = st.session_state.morphology_results
-        
-        if mo_res is not None and not mo_res.empty:
-            # Menampilkan dua sampel: Satu Normal dan Satu Abnormal untuk perbandingan
-            tabs_morf = st.tabs(["Normal", "Abnormal"])
-            
-            with tabs_morf[0]:
-                norm_sample = mo_res[mo_res['morphology_label'] == 'Normal']
-                if not norm_sample.empty:
-                    # Jika fungsi morfologi menyimpan image_display (crop sperma)
-                    st.image(norm_sample.iloc[0]['image_display'], caption="Contoh Normal", use_container_width=True)
+        with r2c1:
+            with st.container(border=True):
+                st.write("**Visualisasi Motilitas Sperma (PR: Hijau, NP: Kuning, IM: Merah)**")
+
+                if 'vis_video_path' in st.session_state and st.session_state.vis_video_path:
+                    # Buka file secara manual dan baca isinya sebagai bytes
+                    with open(st.session_state.vis_video_path, 'rb') as video_file:
+                        video_bytes = video_file.read()
+
+                    # Masukkan objek bytes ke dalam st.video
+                    st.video(video_bytes)
                 else:
-                    st.write("Sampel normal tidak ditemukan.")
-            
-            with tabs_morf[1]:
-                abnorm_sample = mo_res[mo_res['morphology_label'] == 'Abnormal']
-                if not abnorm_sample.empty:
-                    st.image(abnorm_sample.iloc[0]['image_display'], caption="Contoh Abnormal", use_container_width=True)
+                    st.info("Video sedang diproses atau belum tersedia.")
+
+        with r2c2:
+            with st.container(border=True):
+                st.write("**Sampel Morfologi Terdeteksi**")
+
+                # Mengambil hasil morfologi
+                mo_res = st.session_state.morphology_results
+
+                if mo_res is not None and not mo_res.empty:
+                    # Menampilkan dua sampel: Satu Normal dan Satu Abnormal untuk perbandingan
+                    tabs_morf = st.tabs(["Normal", "Abnormal"])
+
+                    with tabs_morf[0]:
+                        norm_sample = mo_res[mo_res['morphology_label'] == 'Normal']
+                        if not norm_sample.empty:
+                            # Jika fungsi morfologi menyimpan image_display (crop sperma)
+                            st.image(
+                                norm_sample.iloc[0]['image_display'],
+                                caption="Contoh Normal",
+                                use_container_width=True
+                            )
+                        else:
+                            st.write("Sampel normal tidak ditemukan.")
+
+                    with tabs_morf[1]:
+                        abnorm_sample = mo_res[mo_res['morphology_label'] == 'Abnormal']
+                        if not abnorm_sample.empty:
+                            st.image(
+                                abnorm_sample.iloc[0]['image_display'],
+                                caption="Contoh Abnormal",
+                                use_container_width=True
+                            )
+                        else:
+                            st.write("Sampel abnormal tidak ditemukan.")
                 else:
-                    st.write("Sampel abnormal tidak ditemukan.")
-        else:
-            st.write("Data morfologi belum diproses.")
+                    st.write("Data morfologi belum diproses.")
