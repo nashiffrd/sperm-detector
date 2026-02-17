@@ -159,7 +159,7 @@ with tab3:
     else:
         # 1. SATU TOMBOL UNTUK DUA MODEL
         if st.button("🚀 Jalankan Analisis Motility dan Morfologi"):
-            with st.spinner("AI sedang menganalisis pergerakan dan bentuk spermatozoa..."):
+            with st.spinner("Analysis Process is Running"):
                 # A. Menjalankan Analisis Motilitas
                 st.session_state.motility_results = run_motility_analysis(
                     st.session_state.prepared_video, 
