@@ -149,9 +149,6 @@ with tab2:
             st.dataframe(st.session_state.tracks_df.head(50), use_container_width=True)
 
 # ------------------------------------------
-# TAB 3: ANALYSIS PROCESS
-# ------------------------------------------
-# ------------------------------------------
 # TAB 3: ANALYSIS PROCESS (REVISED WITH SUMMARY TABLE)
 # ------------------------------------------
 with tab3:
@@ -222,7 +219,6 @@ with tab3:
 # ------------------------------------------
 # TAB 4: SUMMARY DASHBOARD
 # ------------------------------------------
-# Video & Sampel (Summary Dashboard)
 with tab4:
     if st.session_state.motility_results is None or st.session_state.morphology_results is None:
         st.info("Hasil analisis akan tampil setelah Tab 3 selesai diproses.")
