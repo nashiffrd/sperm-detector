@@ -228,28 +228,24 @@ with tab4:
         mo_res = st.session_state.morphology_results
         total_sperma = len(m_res)
 
-        # Hitung Motilitas & Morfologi
         pr_val = len(m_res[m_res['motility_label'] == 'PR'])
         pr_percent = (pr_val / total_sperma) * 100 if total_sperma > 0 else 0
         
         normal_mo_val = len(mo_res[mo_res['morphology_label'] == 'Normal'])
         normal_mo_percent = (normal_mo_val / len(mo_res)) * 100 if len(mo_res) > 0 else 0
 
-        # Logika Diagnosis
-        is_motility_low = pr_percent < 32
-        is_morphology_low = normal_mo_percent < 4
-
-        if is_motility_low and is_morphology_low:
+        # Logika Diagnosis & Warna
+        if pr_percent < 32 and normal_mo_percent < 4:
             status_f, deskripsi, bg_color = "Asthenoteratozoospermia", "Motilitas & Morfologi Normal Rendah", "#721c24"
-        elif is_motility_low:
+        elif pr_percent < 32:
             status_f, deskripsi, bg_color = "Asthenozoospermia", "Gerak Sperma Rendah", "#dc3545"
-        elif is_morphology_low:
+        elif normal_mo_percent < 4:
             status_f, deskripsi, bg_color = "Teratozoospermia", "Bentuk Normal Rendah", "#fd7e14"
         else:
             status_f, deskripsi, bg_color = "Normozoospermia", "Sampel Normal (Sesuai Standar WHO)", "#28a745"
 
         # --- TAMPILAN TERINTEGRASI ---
-        # Bagian 1: Header Diagnosis Berwarna
+        # 1. Header Diagnosis
         st.markdown(f"""
             <div style='background-color: {bg_color}; padding: 25px; border-radius: 15px 15px 0 0; text-align: center; color: white; margin-bottom: 0px;'>
                 <p style='margin:0; font-size: 1.1rem; opacity: 0.9;'>Hasil Analisis Laboratorium:</p>
@@ -258,48 +254,38 @@ with tab4:
             </div>
         """, unsafe_allow_html=True)
 
-        # Bagian 2: Panel Persentase & Counts (Putih/Abu dengan Garis Pemisah)
-        with st.container(border=True):
-            # Baris 1: Persentase Utama (Besar)
-            c_p1, c_p2 = st.columns(2)
-            with c_p1:
-                st.markdown(f"<div style='text-align: center;'><p style='margin-bottom:0;'>PR Motility</p><h2 style='color:{bg_color}; margin-top:0;'>{pr_percent:.1f}%</h2><small>Threshold: 32%</small></div>", unsafe_allow_html=True)
-            with c_p2:
-                st.markdown(f"<div style='text-align: center;'><p style='margin-bottom:0;'>Normal Morphology</p><h2 style='color:{bg_color}; margin-top:0;'>{normal_mo_percent:.1f}%</h2><small>Threshold: 4%</small></div>", unsafe_allow_html=True)
-            
-            st.divider() # Garis pemisah horizontal antara persentase dan jumlah partikel
-            
-            # Baris 2: Integrated Metrics (Jumlah Partikel)
-            st.markdown("<p style='text-align: center; font-weight: bold; margin-bottom: 20px;'>Detail Perhitungan Partikel</p>", unsafe_allow_html=True)
-            
-            m_counts = m_res['motility_label'].value_counts()
-            mo_counts = mo_res['morphology_label'].value_counts()
-            
-            # Membuat 5 kolom dengan divider manual (border-right) menggunakan CSS
-            col1, col2, col3, col4, col5 = st.columns(5)
-            
-            metrics = [
-                ("Motility: PR", m_counts.get('PR', 0)),
-                ("Motility: NP", m_counts.get('NP', 0)),
-                ("Motility: IM", m_counts.get('IM', 0)),
-                ("Morfologi: Normal", mo_counts.get('Normal', 0)),
-                ("Morfologi: Abnormal", mo_counts.get('Abnormal', 0))
-            ]
-            
-            cols = [col1, col2, col3, col4, col5]
-            
-            for i, col in enumerate(cols):
-                with col:
-                    # Menambahkan border kanan kecuali untuk kolom terakhir
-                    border_style = "border-right: 1px solid #ddd;" if i < 4 else ""
-                    st.markdown(f"""
-                        <div style='text-align: center; {border_style} padding: 10px 0;'>
-                            <small style='color: gray;'>{metrics[i][0]}</small>
-                            <h3 style='margin: 0; color: #333;'>{metrics[i][1]}</h3>
-                        </div>
-                    """, unsafe_allow_html=True)
+        # 2. Body Panel (Warna Soft Grey agar Estetik)
+        st.markdown(f"""
+            <div style='background-color: #f8f9fa; padding: 20px; border-radius: 0 0 15px 15px; border: 1px solid #e9ecef; border-top: none;'>
+                <div style='display: flex; justify-content: space-around; text-align: center;'>
+                    <div style='flex: 1; border-right: 1px solid #dee2e6;'>
+                        <p style='margin-bottom:0; color: #6c757d;'>PR Motility</p>
+                        <h2 style='color:{bg_color}; margin-top:0;'>{pr_percent:.1f}%</h2>
+                        <small style='color: #adb5bd;'>Threshold: 32%</small>
+                    </div>
+                    <div style='flex: 1;'>
+                        <p style='margin-bottom:0; color: #6c757d;'>Normal Morphology</p>
+                        <h2 style='color:{bg_color}; margin-top:0;'>{normal_mo_percent:.1f}%</h2>
+                        <small style='color: #adb5bd;'>Threshold: 4%</small>
+                    </div>
+                </div>
+                <hr style='margin: 20px 0; border: 0.5px solid #dee2e6;'>
+                <p style='text-align: center; font-weight: bold; color: #495057; margin-bottom: 15px;'>Detail Perhitungan Partikel</p>
+                <div style='display: flex; justify-content: space-between; text-align: center;'>
+                    <div style='flex: 1; border-right: 1px solid #dee2e6;'><small style='color: #6c757d;'>PR</small><h4 style='margin:0;'>{m_res['motility_label'].value_counts().get('PR', 0)}</h4></div>
+                    <div style='flex: 1; border-right: 1px solid #dee2e6;'><small style='color: #6c757d;'>NP</small><h4 style='margin:0;'>{m_res['motility_label'].value_counts().get('NP', 0)}</h4></div>
+                    <div style='flex: 1; border-right: 1px solid #dee2e6;'><small style='color: #6c757d;'>IM</small><h4 style='margin:0;'>{m_res['motility_label'].value_counts().get('IM', 0)}</h4></div>
+                    <div style='flex: 1; border-right: 1px solid #dee2e6;'><small style='color: #6c757d;'>Normal</small><h4 style='margin:0;'>{mo_res['morphology_label'].value_counts().get('Normal', 0)}</h4></div>
+                    <div style='flex: 1;'><small style='color: #6c757d;'>Abnormal</small><h4 style='margin:0;'>{mo_res['morphology_label'].value_counts().get('Abnormal', 0)}</h4></div>
+                </div>
+            </div>
+        """, unsafe_allow_html=True)
 
-        # Tombol Aksi Tambahan
+        # --- 3. TOMBOL RESET (Fungsi Membersihkan Semua) ---
         st.write("")
-        if st.button("Simpan Laporan Analisis"):
-            st.success("Hasil diagnosa telah disimpan ke database.")
+        if st.button("🔄 Reset Analisis & Mulai Baru", use_container_width=True):
+            # Menghapus semua kunci di session_state
+            for key in list(st.session_state.keys()):
+                del st.session_state[key]
+            # Refresh halaman secara otomatis
+            st.rerun()
