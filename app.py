@@ -91,7 +91,7 @@ with tab1:
 # ------------------------------------------
 with tab2:
     st.header("Upload & Digital Processing")
-    video_file = st.file_uploader("Pilih Video Sperma", type=['mp4', 'avi'])
+    video_file = st.file_uploader("Pilih Video Sperma", type=['mp4', 'avi'], key="sperm_video_uploader")
 
     if video_file:
         # Membuat ID unik untuk video (nama + ukuran file)
