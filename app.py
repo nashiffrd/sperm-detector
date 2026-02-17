@@ -228,23 +228,62 @@ with tab4:
         st.info("Hasil analisis akan tampil setelah Tab 3 selesai diproses.")
     else:
         # --- 1. MAIN RESULT CARD ---
-        m_res = st.session_state.motility_results
-        total_sperma = len(m_res)
-        pr_val = len(m_res[m_res['motility_label'] == 'PR'])
+        # --- 1. MAIN RESULT CARD ---
+m_res = st.session_state.motility_results
+mo_res = st.session_state.morphology_results
 
-        # Logika WHO: Fertil jika PR > 32%
-        status_f = "FERTIL" if pr_val > (0.32 * total_sperma) else "INFERTIL"
+total_sperma = len(m_res)
+# Hitung PR (Motilitas)
+pr_val = len(m_res[m_res['motility_label'] == 'PR'])
+pr_percent = (pr_val / total_sperma) * 100 if total_sperma > 0 else 0
 
-        # Warna dinamis: Hijau untuk Fertil, Merah untuk Infertil
-        bg_color = "#28a745" if status_f == "FERTIL" else "#dc3545"
+# Hitung Morfologi Normal
+normal_mo_val = len(mo_res[mo_res['morphology_label'] == 'Normal'])
+normal_mo_percent = (normal_mo_val / len(mo_res)) * 100 if len(mo_res) > 0 else 0
 
-        st.markdown(f"""
-            <div style='background-color: {bg_color}; padding: 20px; border-radius: 10px; text-align: center; color: white;'>
-                <h1 style='margin:0;'>Main Result : {status_f}</h1>
-                <p style='margin:0;'>Persentase Progressive Motility: {(pr_val/total_sperma)*100:.2f}%</p>
+# LOGIKA KATEGORI KELAINAN (WHO Reference)
+is_motility_low = pr_percent < 32
+is_morphology_low = normal_mo_percent < 4
+
+if is_motility_low and is_morphology_low:
+    status_f = "Asthenoteratozoospermia"
+    deskripsi = "Kombinasi Motilitas Rendah & Morfologi Normal Rendah"
+    bg_color = "#721c24" # Merah Gelap
+elif is_motility_low:
+    status_f = "Asthenozoospermia"
+    deskripsi = "Kelainan pada Motilitas (Gerak Sperma Rendah)"
+    bg_color = "#dc3545" # Merah
+elif is_morphology_low:
+    status_f = "Teratozoospermia"
+    deskripsi = "Kelainan pada Morfologi (Bentuk Normal Rendah)"
+    bg_color = "#fd7e14" # Oranye
+else:
+    status_f = "Normozoospermia"
+    deskripsi = "Sampel dalam Batas Normal (Sesuai Standar WHO)"
+    bg_color = "#28a745" # Hijau
+
+# TAMPILAN CARD
+st.markdown(f"""
+    <div style='background-color: {bg_color}; padding: 25px; border-radius: 15px; text-align: center; color: white; border: 2px solid rgba(255,255,255,0.2)'>
+        <p style='margin:0; font-size: 1.2rem; opacity: 0.9;'>Diagnosis Berdasarkan Parameter WHO:</p>
+        <h1 style='margin:10px 0; font-size: 2.8rem; letter-spacing: 1px;'>{status_f}</h1>
+        <hr style='border: 0.5px solid rgba(255,255,255,0.3); margin: 15px 0;'>
+        <div style='display: flex; justify-content: space-around;'>
+            <div>
+                <p style='margin:0; font-weight: bold;'>PR Motility</p>
+                <h2 style='margin:0;'>{pr_percent:.1f}%</h2>
+                <small>(Threshold: 32%)</small>
             </div>
-        """, unsafe_allow_html=True)
-        st.write("")
+            <div>
+                <p style='margin:0; font-weight: bold;'>Normal Morphology</p>
+                <h2 style='margin:0;'>{normal_mo_percent:.1f}%</h2>
+                <small>(Threshold: 4%)</small>
+            </div>
+        </div>
+        <p style='margin-top:20px; font-style: italic; font-size: 0.9rem;'>{deskripsi}</p>
+    </div>
+""", unsafe_allow_html=True)
+st.write("")
 
         # --- 2. MOTILITY & MORPHOLOGY METRICS ---
         r1c1, r1c2 = st.columns([2, 1])
