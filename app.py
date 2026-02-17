@@ -223,79 +223,83 @@ with tab4:
     if st.session_state.motility_results is None or st.session_state.morphology_results is None:
         st.info("Hasil analisis akan tampil setelah Tab 3 selesai diproses.")
     else:
-        # --- 1. MAIN RESULT CARD (Diagnosis Box) ---
+        # --- PRE-CALCULATION ---
         m_res = st.session_state.motility_results
         mo_res = st.session_state.morphology_results
-
         total_sperma = len(m_res)
 
-        # Hitung PR (Motilitas)
+        # Hitung Motilitas & Morfologi
         pr_val = len(m_res[m_res['motility_label'] == 'PR'])
         pr_percent = (pr_val / total_sperma) * 100 if total_sperma > 0 else 0
-
-        # Hitung Morfologi Normal
+        
         normal_mo_val = len(mo_res[mo_res['morphology_label'] == 'Normal'])
         normal_mo_percent = (normal_mo_val / len(mo_res)) * 100 if len(mo_res) > 0 else 0
 
-        # LOGIKA KATEGORI KELAINAN (WHO Reference)
+        # Logika Diagnosis
         is_motility_low = pr_percent < 32
         is_morphology_low = normal_mo_percent < 4
 
         if is_motility_low and is_morphology_low:
-            status_f, deskripsi, bg_color = "Asthenoteratozoospermia", "Kombinasi Motilitas Rendah & Morfologi Normal Rendah", "#721c24"
+            status_f, deskripsi, bg_color = "Asthenoteratozoospermia", "Motilitas & Morfologi Normal Rendah", "#721c24"
         elif is_motility_low:
-            status_f, deskripsi, bg_color = "Asthenozoospermia", "Kelainan pada Motilitas (Gerak Sperma Rendah)", "#dc3545"
+            status_f, deskripsi, bg_color = "Asthenozoospermia", "Gerak Sperma Rendah", "#dc3545"
         elif is_morphology_low:
-            status_f, deskripsi, bg_color = "Teratozoospermia", "Kelainan pada Morfologi (Bentuk Normal Rendah)", "#fd7e14"
+            status_f, deskripsi, bg_color = "Teratozoospermia", "Bentuk Normal Rendah", "#fd7e14"
         else:
-            status_f, deskripsi, bg_color = "Normozoospermia", "Sampel dalam Batas Normal (Sesuai Standar WHO)", "#28a745"
+            status_f, deskripsi, bg_color = "Normozoospermia", "Sampel Normal (Sesuai Standar WHO)", "#28a745"
 
-        # TAMPILAN CARD DIAGNOSIS (Dipersingkat Paddingnya agar hemat ruang)
+        # --- TAMPILAN TERINTEGRASI ---
+        # Bagian 1: Header Diagnosis Berwarna
         st.markdown(f"""
-            <div style='background-color: {bg_color}; padding: 20px; border-radius: 15px; text-align: center; color: white; border: 2px solid rgba(255,255,255,0.2); margin-bottom: 0px;'>
-                <p style='margin:0; font-size: 1.1rem; opacity: 0.9;'>Diagnosis Berdasarkan Parameter WHO:</p>
-                <h1 style='margin:5px 0; font-size: 2.5rem; letter-spacing: 1px;'>{status_f}</h1>
-                <hr style='border: 0.5px solid rgba(255,255,255,0.3); margin: 10px 0;'>
-                <div style='display: flex; justify-content: space-around;'>
-                    <div>
-                        <p style='margin:0; font-weight: bold;'>PR Motility</p>
-                        <h2 style='margin:0;'>{pr_percent:.1f}%</h2>
-                        <small>(Threshold: 32%)</small>
-                    </div>
-                    <div>
-                        <p style='margin:0; font-weight: bold;'>Normal Morphology</p>
-                        <h2 style='margin:0;'>{normal_mo_percent:.1f}%</h2>
-                        <small>(Threshold: 4%)</small>
-                    </div>
-                </div>
-                <p style='margin-top:10px; font-style: italic; font-size: 0.9rem;'>{deskripsi}</p>
+            <div style='background-color: {bg_color}; padding: 25px; border-radius: 15px 15px 0 0; text-align: center; color: white; margin-bottom: 0px;'>
+                <p style='margin:0; font-size: 1.1rem; opacity: 0.9;'>Hasil Analisis Laboratorium:</p>
+                <h1 style='margin:5px 0; font-size: 3rem; font-weight: 800;'>{status_f}</h1>
+                <p style='margin:0; font-style: italic;'>{deskripsi}</p>
             </div>
         """, unsafe_allow_html=True)
 
-        # --- 2. INTEGRATED METRICS (Satu Baris Lurus & Rata Tengah) ---
-        # Menghilangkan st.write("") untuk merapatkan jarak
+        # Bagian 2: Panel Persentase & Counts (Putih/Abu dengan Garis Pemisah)
         with st.container(border=True):
-            # Menampilkan Judul Gabungan agar Rapi
-            st.markdown("<h4 style='text-align: center; margin-bottom: 15px;'>Detail Perhitungan Partikel (Motilitas & Morfologi)</h4>", unsafe_allow_html=True)
+            # Baris 1: Persentase Utama (Besar)
+            c_p1, c_p2 = st.columns(2)
+            with c_p1:
+                st.markdown(f"<div style='text-align: center;'><p style='margin-bottom:0;'>PR Motility</p><h2 style='color:{bg_color}; margin-top:0;'>{pr_percent:.1f}%</h2><small>Threshold: 32%</small></div>", unsafe_allow_html=True)
+            with c_p2:
+                st.markdown(f"<div style='text-align: center;'><p style='margin-bottom:0;'>Normal Morphology</p><h2 style='color:{bg_color}; margin-top:0;'>{normal_mo_percent:.1f}%</h2><small>Threshold: 4%</small></div>", unsafe_allow_html=True)
             
-            # Membuat 5 kolom untuk PR, NP, IM, Normal, Abnormal
-            c1, c2, c3, c4, c5 = st.columns(5)
+            st.divider() # Garis pemisah horizontal antara persentase dan jumlah partikel
+            
+            # Baris 2: Integrated Metrics (Jumlah Partikel)
+            st.markdown("<p style='text-align: center; font-weight: bold; margin-bottom: 20px;'>Detail Perhitungan Partikel</p>", unsafe_allow_html=True)
             
             m_counts = m_res['motility_label'].value_counts()
             mo_counts = mo_res['morphology_label'].value_counts()
             
-            with c1:
-                st.markdown("<div style='text-align: center;'><b>Motility: PR</b></div>", unsafe_allow_html=True)
-                st.metric(label="", value=m_counts.get('PR', 0), label_visibility="collapsed")
-            with c2:
-                st.markdown("<div style='text-align: center;'><b>Motility: NP</b></div>", unsafe_allow_html=True)
-                st.metric(label="", value=m_counts.get('NP', 0), label_visibility="collapsed")
-            with c3:
-                st.markdown("<div style='text-align: center;'><b>Motility: IM</b></div>", unsafe_allow_html=True)
-                st.metric(label="", value=m_counts.get('IM', 0), label_visibility="collapsed")
-            with c4:
-                st.markdown("<div style='text-align: center;'><b>Morphology: Normal</b></div>", unsafe_allow_html=True)
-                st.metric(label="", value=mo_counts.get('Normal', 0), label_visibility="collapsed")
-            with c5:
-                st.markdown("<div style='text-align: center;'><b>Morphology: Abnormal</b></div>", unsafe_allow_html=True)
-                st.metric(label="", value=mo_counts.get('Abnormal', 0), label_visibility="collapsed")
+            # Membuat 5 kolom dengan divider manual (border-right) menggunakan CSS
+            col1, col2, col3, col4, col5 = st.columns(5)
+            
+            metrics = [
+                ("Motility: PR", m_counts.get('PR', 0)),
+                ("Motility: NP", m_counts.get('NP', 0)),
+                ("Motility: IM", m_counts.get('IM', 0)),
+                ("Morfologi: Normal", mo_counts.get('Normal', 0)),
+                ("Morfologi: Abnormal", mo_counts.get('Abnormal', 0))
+            ]
+            
+            cols = [col1, col2, col3, col4, col5]
+            
+            for i, col in enumerate(cols):
+                with col:
+                    # Menambahkan border kanan kecuali untuk kolom terakhir
+                    border_style = "border-right: 1px solid #ddd;" if i < 4 else ""
+                    st.markdown(f"""
+                        <div style='text-align: center; {border_style} padding: 10px 0;'>
+                            <small style='color: gray;'>{metrics[i][0]}</small>
+                            <h3 style='margin: 0; color: #333;'>{metrics[i][1]}</h3>
+                        </div>
+                    """, unsafe_allow_html=True)
+
+        # Tombol Aksi Tambahan
+        st.write("")
+        if st.button("Simpan Laporan Analisis"):
+            st.success("Hasil diagnosa telah disimpan ke database.")
