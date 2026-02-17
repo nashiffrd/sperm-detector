@@ -281,11 +281,16 @@ with tab4:
             </div>
         """, unsafe_allow_html=True)
 
-        # --- 3. TOMBOL RESET (Fungsi Membersihkan Semua) ---
+        # --- 3. TOMBOL RESET (Sempurna untuk Semua Tab) ---
         st.write("")
         if st.button("🔄 Reset Analisis & Mulai Baru", use_container_width=True):
-            # Menghapus semua kunci di session_state
+            # 1. List kunci session_state yang harus dibersihkan secara paksa
+            # Sesuaikan nama kunci ini dengan yang kamu pakai di Tab 2 (misal: 'uploaded_video')
             for key in list(st.session_state.keys()):
                 del st.session_state[key]
-            # Refresh halaman secara otomatis
+            
+            # 2. Opsional: Jika kamu menggunakan key pada st.file_uploader, 
+            # membersihkan session_state di atas sudah cukup.
+            
+            # 3. Paksa aplikasi untuk restart dari awal
             st.rerun()
