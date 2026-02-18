@@ -187,7 +187,7 @@ with tab3:
             final_summary = pd.merge(coords, summary_df, on='particle', how='inner')
             
             # Menampilkan tabel dengan kolom confidence agar terlihat progresnya
-            final_summary = final_summary[['x', 'y', 'frame', 'particle', 'motility_label', 'morphology_label', 'confidence_mot', 'confidence_morf']]
+            final_summary = final_summary[['x', 'y', 'frame', 'particle', 'motility_label', 'morphology_label', 'confidence_mot', 'confidence_mo']]
             final_summary.columns = ['X', 'Y', 'Frame', 'ID Particle', 'Motility', 'Morphology', 'Conf Motility', 'Conf Morphology']
             
             st.dataframe(final_summary, use_container_width=True)
