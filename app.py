@@ -182,7 +182,7 @@ with tab3:
             df_mot = st.session_state.motility_results[['particle', 'motility_label', 'confidence']]
             df_morf = st.session_state.morphology_results[['particle', 'morphology_label', 'confidence']]
             
-            summary_df = pd.merge(df_mot, df_morf, on='particle', how='inner', suffixes=('_mot', '_morf'))
+            summary_df = pd.merge(df_mot, df_morf, on='particle', how='inner', suffixes=('_mot', '_mo'))
             coords = st.session_state.tracks_df.groupby('particle').first().reset_index()[['particle', 'x', 'y', 'frame']]
             final_summary = pd.merge(coords, summary_df, on='particle', how='inner')
             
