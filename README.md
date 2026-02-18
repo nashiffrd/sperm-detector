@@ -15,6 +15,7 @@ Sistem melakukan evaluasi berdasarkan ambang batas klinis:
 | :--- | :--- | :--- |
 | Progressive Motility (PR) | < 32% | Indikasi Asthenozoospermia |
 | Normal Morphology | < 4% | Indikasi Teratozoospermia |
+| Kombinasi Motility & Morfologi | | Asthenoteratozoospermia|
 
 🛠️ Teknologi yang Digunakan
 -Python (Core Programming)
