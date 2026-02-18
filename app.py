@@ -179,16 +179,16 @@ with tab3:
             st.subheader("📋 Tabel Summary Klasifikasi")
             
             # Penggabungan data dengan menyertakan kolom confidence
-            df_mot = st.session_state.motility_results[['particle', 'motility_label', 'confidence']]
-            df_morf = st.session_state.morphology_results[['particle', 'morphology_label', 'confidence']]
+            df_mot = st.session_state.motility_results[['particle', 'motility_label']]
+            df_morf = st.session_state.morphology_results[['particle', 'morphology_label']]
             
-            summary_df = pd.merge(df_mot, df_morf, on='particle', how='inner', suffixes=('_motility', '_morphology'))
+            summary_df = pd.merge(df_mot, df_morf, on='particle', how='inner')
             coords = st.session_state.tracks_df.groupby('particle').first().reset_index()[['particle', 'x', 'y', 'frame']]
             final_summary = pd.merge(coords, summary_df, on='particle', how='inner')
             
             # Menampilkan tabel dengan kolom confidence agar terlihat progresnya
-            final_summary = final_summary[['x', 'y', 'frame', 'particle', 'motility_label', 'morphology_label', 'confidence_motility', 'confidence_morphology']]
-            final_summary.columns = ['X', 'Y', 'Frame', 'ID Particle', 'Motility', 'Morphology', 'Conf Motility', 'Conf Morphology']
+            final_summary = final_summary[['x', 'y', 'frame', 'particle', 'motility_label', 'morphology_label']]
+            final_summary.columns = ['X', 'Y', 'Frame', 'ID Particle', 'Motility', 'Morphology']
             
             st.dataframe(final_summary, use_container_width=True)
             
@@ -255,9 +255,16 @@ with tab4:
             </div>
         """, unsafe_allow_html=True)
         
-        # 3. AI CONFIDENCE SCORE
+        # --- 3. AI CONFIDENCE SCORE (Visualisasi di Tab 4) ---
+        m_res = st.session_state.motility_results
+        mo_res = st.session_state.morphology_results
+        
+        # Ambil rata-rata confidence dari masing-masing model
+        # Karena kolom ini ada di masing-masing DataFrame asli, tidak akan error
         conf_mot = m_res['confidence'].mean() * 100 if 'confidence' in m_res.columns else 0
         conf_mo = mo_res['confidence'].mean() * 100 if 'confidence' in mo_res.columns else 0
+        
+        # Nilai Akhir Gabungan
         sys_conf = (conf_mot + conf_mo) / 2
 
         st.markdown(f"""
@@ -270,7 +277,7 @@ with tab4:
                     <span style='color: {bg_color}; font-weight: 800; font-size: 1rem;'>{sys_conf:.2f}%</span>
                 </div>
                 <p style='margin-top: 8px; color: #6c757d; font-size: 0.75rem; text-align: center;'>
-                    Skor ini menunjukkan tingkat kepastian model dalam mengklasifikasikan sel pada sampel ini.
+                    Skor ini menunjukkan tingkat kepastian model dalam mengklasifikasikan sel pada sampel ini secara keseluruhan.
                 </p>
             </div>
         """, unsafe_allow_html=True)
